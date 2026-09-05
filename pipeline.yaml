@@ -1,0 +1,41 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: tax-calculator-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+
+  tasks:
+    - name: npminstall
+      taskRef:
+        name: npminstall
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: tests
+      runAfter:
+        - npminstall
+      taskRef:
+        name: tests
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build
+      runAfter:
+        - tests
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: build
+            image: nginx
+            workingDir: $(workspaces.source.path)
+            script: |
+              #!/usr/bin/env sh
+              echo "Building Tax Calculator application"
+              test -f index.html
+              test -f taxCalculator.js
+              echo "Build successful"
